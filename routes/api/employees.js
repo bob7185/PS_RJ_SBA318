@@ -1,85 +1,149 @@
 const express = require('express');
 const moment = require('moment');
-const employees = require('../../Employees')
+const employees = require('../../models/Employees'); // Employee data
+const validateEmployee = require('../../middleware/validateEmployee');
 
 const router = express.Router();
+const basePath = '/api/employees'; // Define base path
 
-//retrieve all employees
-router.get('/', (req, res)=>{
-    res.json(employees);
-})
+// Base path for all employees
+router.route('/')
+    .get((req, res) => {
+        const searchQuery = req.query.search || ''; // Get the search query from URL params
+        // Filter employees based on the search query in name, email, age, or id
+        const filteredEmployees = employees.filter(employee => 
+            employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            employee.id.toString().includes(searchQuery) ||
+            employee.age.toString().includes(searchQuery)
+        );
 
-//retrieve a single employee
-router.get('/:name', (req,res)=>{
-    //checking if the name exists
-    const checkExists = employees.some(employee=> employee.name === req.params.name)
-    if(checkExists)
-    {
-        res.json(employees.filter(employee => 
-            employee.name === req.params.name))
-    }
-    else{
-        //400 bad request
-        res.status(400).json({msg:`Employee ${req.params.name} doesn't exist`})
-    }
+        // If no employees found, show an error message
+        const errorMessage = filteredEmployees.length === 0 ? 'No employees found matching your search criteria.' : null;
+        
+        res.render('employees', {
+            title: 'Employee Management',
+            description: 'Manage Employees',
+            action: 'show',
+            employees: filteredEmployees,
+            searchQuery,
+            errorMessage,
+            basePath
+        });
+    })
+    .post(validateEmployee, (req, res) => {
+        const newEmployee = {
+            id: employees.length ? employees[employees.length - 1].id + 1 : 1,
+            name: req.body.name,
+            email: req.body.email,
+            age: req.body.age,
+            added: moment().format()
+        };
 
-})
+        employees.push(newEmployee);
+        res.redirect(basePath); // Redirect to the list page showing all employees
+    });
 
-//create Employee
-router.post('/', (req, res)=>{
-    console.log(req.body)
-    const newEmployee ={
-        //automatically assign the id 
-        id: employees[employees.length -1].id + 1,
-        name: req.body.name,
-        email: req.body.email,
-        added: `${moment().format()}`  
-    }
-    if(!newEmployee.name || !newEmployee.email)
-    {
-        res.status(400).json({msg:'Please include both a name and an Email! Thanks!'});
-    }
-    //adding the new employee
-    employees.push(newEmployee);
-    res.json(employees);
-
+// Add new employee form
+router.get('/new', (req, res) => {
+    res.render('employees', {
+        title: 'Add Employee',
+        description: 'Add a New Employee',
+        action: 'form',
+        formAction: '', // No ID for a new employee
+        method: 'POST',
+        buttonText: 'Add Employee',
+        employee: null, // Explicitly pass null to avoid errors
+        basePath
+    });
 });
 
-// update an employee. 
-router.put('/:name', (req, res)=>{
-    const checkExists = employees.some(employee=> employee.name === req.params.name);
-    if(checkExists)
-    {
-        const updateEmployee = req.body; 
-        employees.forEach(employee => {
-            if(employee.name === req.params.name)
-            {
-                // update employee fields 
-                employee.name = updateEmployee.name ? updateEmployee.name : employee.name;
-                employee.email = updateEmployee.email ? updateEmployee.email: employee.email
-                res.json({msg: `Employee updated`, employee});
-            }  
+// Single employee operations
+router
+    .route('/:id')
+    // View a single employee
+    .get((req, res) => {
+        const employee = employees.find(emp => emp.id === parseInt(req.params.id));
+        if (!employee) {
+            return res.status(404).render('employees', {
+                title: 'Error',
+                description: 'Error',
+                action: 'error',
+                errorMessage: `Employee with ID ${req.params.id} not found`,
+                basePath
+            });
+        }
+
+        res.render('employees', {
+            title: 'Employee Details',
+            description: `Details of ${employee.name}`,
+            action: 'view',
+            employee,
+            basePath
+        });
+    })
+    // Update an employee
+    .put(validateEmployee, (req, res) => {
+        const index = employees.findIndex(emp => emp.id === parseInt(req.params.id));
+        if (index === -1) {
+            return res.status(404).render('employees', {
+                title: 'Error',
+                description: 'Error',
+                action: 'error',
+                errorMessage: `Employee with ID ${req.params.id} not found`,
+                basePath
+            });
+        }
+
+        const updatedEmployee = {
+            ...employees[index],
+            ...req.body,
+            updated: moment().format()
+        };
+
+        employees[index] = updatedEmployee;
+        res.redirect(basePath); // Redirect to the list of employees
+    })
+    // Delete an employee
+    .delete((req, res) => {
+        const index = employees.findIndex(emp => emp.id === parseInt(req.params.id));
+        if (index === -1) {
+            return res.status(404).render('employees', {
+                title: 'Error',
+                description: 'Error',
+                action: 'error',
+                errorMessage: `Employee with ID ${req.params.id} not found`,
+                basePath
+            });
+        }
+
+        employees.splice(index, 1);
+        res.redirect(basePath); // Redirect to the list
+    });
+
+// Edit employee form
+router.get('/:id/edit', (req, res) => {
+    const employee = employees.find(employee => employee.id === parseInt(req.params.id));
+    if (!employee) {
+        return res.status(404).render('employees', {
+            title: 'Error',
+            description: 'Error',
+            action: 'error',
+            errorMessage: `Employee with ID ${req.params.id} not found`,
+            basePath
         });
     }
-    else{
-        res.status(400).json({msg: `Employee ${req.params.name} doesn't exist`});
-    }
-})
 
-
-router.delete('/:name', (req, res)=>{
-    const checkExists = employees.some(employee=> employee.name === req.params.name);
-    if(checkExists)
-    {
-        res.json({msg:'Employee deleted',
-            employees: employees.filter(employee => employee.name !== req.params.name)
-        })
-    }
-    else{
-        res.status(400).json({msg: `Employee ${req.params.name} doesn't exist`});
-    }
-})
-
-
+    res.render('employees', {
+        title: 'Edit Employee',
+        description: `Edit Details of ${employee.name}`,
+        action: 'form',
+        employee,
+        formAction: `/${employee.id}?_method=PUT`,
+        method: 'PUT',
+        buttonText: 'Update Employee',
+        basePath
+    });
+});
 
 module.exports = router;

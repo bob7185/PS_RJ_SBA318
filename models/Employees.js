@@ -31,5 +31,4 @@ const employees =[
         age: 30,
     },
 ]
-
 module.exports = employees;
