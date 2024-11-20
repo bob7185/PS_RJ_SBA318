@@ -22,12 +22,9 @@ This is a simple Employee Management System built with **Node.js**, **Express**,
 
 ## Getting Started
 
-### 1. Clone the Repository
-First, clone the repository to your local machine:
-
+### 1. GitHub Repository
 ```bash
-git clone https://github.com/yourusername/employee-management-system.git
-cd employee-management-system
+git clone https://github.com/bob7185/PS_RJ_SBA318
 ```
 
 ### 2. Install Dependencies
@@ -54,25 +51,26 @@ The application will be available at `http://localhost:4040` by default. You can
 ├── app.js                    # Main entry point for the application
 ├── middleware
 │   ├── errorHandler.js        # Custom error-handling middleware
-│   └── logger.js
- |___validatemployee           # Custom logg
-     
+│   └── logger.js              # Custom logging middleware
+    |__ validateEmployee.js    # Custom Middleware that validate if all info were entered when adding a nw employee
 ├── models
 │   └── Employees.js           # Employee data model (in-memory)
 ├── routes
 │   └── api
 │       └── employees.js       # Employee-related API routes
-│       └── departments.js     # Placeholder for department routes (not implemented)
-│       └── projects.js        # Placeholder for project routes (not implemented)
+│       └── departments.js     # Department routes (allows getting the current list of departments and adding a new one)     
+└──     |___ projects.js       # projects routes (allows getting the current list of projects and adding new project ) 
 ├── views
 │   ├── employees.ejs          # Employee management UI
+    |___projects.ejs           # view to interact with the projects ap. UI not implemented yet 
+    |___departments.ejs        # View to interact with the departments api. UI not implemented yet
 │   ├── index.ejs              # Main page of the application
 ├── public
-│   └── styles.css             # Basic CSS styling
+│   └── styles.css             # contains the css file for basic styling
 └── package.json               # NPM package metadata
 ```
 
-### 5. API Endpoints
+### 5. Employee API Endpoints
 
 The API exposes the following endpoints for managing employees:
 
@@ -149,21 +147,4 @@ Handles the display and management of employee data. Based on the `action` passe
 - **validateEmployee.js**: Validates that `name`, `email`, and `age` fields are provided when adding or updating employees.
 - **errorHandler.js**: A placeholder for custom error handling. Can be expanded based on future needs.
 
-### 8. Styling
 
-Basic styling is included in `styles.css` for simplicity, but you can enhance this as needed.
-
-### 9. Future Enhancements
-
-- Implement departments and projects as separate modules.
-- Use a real database (e.g., MongoDB or PostgreSQL) instead of in-memory storage.
-- Add user authentication for security.
-- Improve UI with a front-end framework like React or Vue.js.
-
-## Contributing
-
-Feel free to fork this project and make contributions. If you encounter any bugs or issues, please open an issue on GitHub.
-
-## License
-
-This project is open-source and available under the [MIT License](LICENSE).
